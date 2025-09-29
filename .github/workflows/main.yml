@@ -36,5 +36,5 @@ jobs:
       - name: Upload executed notebook as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: executed-notebook
+          name: AddressTransaction
           path: outputs/
