@@ -3,7 +3,7 @@ name: Run notebook monthly
 on:
   schedule:
     - cron: "0 9 1 * *"       # at 09:00 UTC on the 1st day of every month
-  workflow_dispatch: "manual run"           # allows manual run via GitHub Actions tab
+  workflow_dispatch:          # allows manual run via GitHub Actions tab
 
 jobs:
   run:
