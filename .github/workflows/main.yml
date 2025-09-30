@@ -2,8 +2,8 @@ name: Run notebook monthly
 
 on:
   schedule:
-    - cron: "0 9 1 * *"       # at 09:00 UTC on the 1st day of every month
-  workflow_dispatch:          # allows manual run via GitHub Actions tab
+    - cron: "0 9 1 * *"       # at 09:00 UTC on the 1st day of every month (17:00 SGT)
+  workflow_dispatch:
 
 jobs:
   run:
@@ -24,17 +24,46 @@ jobs:
           pip install papermill jupyter
           pip install requests pandas python-dateutil
 
-      # Option A: Directly execute notebook
-      #- name: Execute notebook with papermill
-      #  run: |
-      #   papermill notebooks/your.ipynb notebooks/your-output.ipynb
+      # Option A: Execute notebook with papermill
+      # - name: Execute notebook with papermill
+      #   run: |
+      #     mkdir -p outputs
+      #     papermill notebooks/your.ipynb outputs/your-output.ipynb
 
-      # Option B: Use your .py script (uncomment and comment the step above)
+      # Option B: Use your .py script
       - name: Execute with Python runner script
-        run: python fetch_transaction.py
+        run: |
+          mkdir -p outputs
+          python fetch_transaction.py
 
-      - name: Upload executed notebook as artifact
+      - name: Upload outputs as artifact
         uses: actions/upload-artifact@v4
         with:
           name: AddressTransaction
           path: outputs/
+
+      # Email the files in outputs/ via Gmail SMTP
+      - name: Email results
+        if: success()  # use 'always()' if you want email even on failures
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: "AddressTransaction monthly export - ${{ github.repository }} @ ${{ github.run_id }}"
+          to: "jiangshuang0809@gmail.com"
+          from: "GitHub Actions <${{ secrets.GMAIL_USERNAME }}>"
+          body: |
+            Hi Shuang,
+
+            Here are the latest monthly outputs from the workflow:
+            - Repo: ${{ github.repository }}
+            - Run:  ${{ github.run_id }}
+            - Commit: ${{ github.sha }}
+            - Time (UTC): ${{ github.event.schedule || '' }} / ${{ github.run_started_at }}
+
+            Files are attached. The full artifact is also uploaded to the run.
+          attachments: |
+            outputs/**
